@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition System</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        video { border: 2px solid black; margin-top: 10px; }
+        input, button { margin: 10px; padding: 10px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h2>Face Recognition System</h2>
+    <video id="video" width="640" height="480" autoplay></video>
+    <br>
+    <input type="text" id="name" placeholder="Enter Name">
+    <button onclick="registerUser()">Register</button>
+    <button onclick="identifyUser()">Identify</button>
+    <p id="result"></p>
+
+    <script>
+        const video = document.getElementById('video');
+
+        // Get camera feed
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => { video.srcObject = stream; })
+            .catch(err => console.error(err));
+
+        function captureImage() {
+            let canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            let ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/jpeg');
+        }
+
+        function registerUser() {
+            let name = document.getElementById('name').value.trim();
+            if (!name) {
+                alert("Enter a name to register.");
+                return;
+            }
+
+            let imageData = captureImage();
+
+            fetch('/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerText = data.message || data.error;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function identifyUser() {
+            let imageData = captureImage();
+
+            fetch('/identify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerText = `Identity: ${data.identity}`;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
